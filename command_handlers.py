@@ -1,6 +1,7 @@
 import logging
 import random
 import time
+import xmltodict
 
 from meshtastic import BROADCAST_NUM
 
@@ -16,14 +17,13 @@ from utils import (
     update_user_state
 )
 
-
 def handle_help_command(sender_id, interface, menu_name=None):
     if menu_name:
         update_user_state(sender_id, {'command': 'MENU', 'menu': menu_name, 'step': 1})
         if menu_name == 'bbs':
             response = "📰BBS Menu📰\n[M]ail\n[B]ulletins\n[C]hannel Dir\nE[X]IT"
         elif menu_name == 'utilities':
-            response = "🛠️Utilities Menu🛠️\n[S]tats\n[F]ortune\n[W]all of Shame\nE[X]IT"
+            response = "🛠️Utilities Menu🛠️\nHam [B]and Conditions\n[S]tats\n[F]ortune\n[W]all of Shame\nE[X]IT"
     else:
         update_user_state(sender_id, {'command': 'MAIN_MENU', 'step': 1})  # Reset to main menu state
         response = "💾TC² BBS💾\n[Q]uick Commands\n[B]BS\n[U]tilities\nE[X]IT"
@@ -37,6 +37,39 @@ def get_node_name(node_id, interface):
     if node_info:
         return node_info['user']['longName']
     return f"Node {node_id}"
+
+def handle_bandconditions_command(sender_id, interface):
+    response="Ham Band Conditions\nWhich bands would you like to view day/night conditions for?\n"
+    send_message(response, sender_id, interface)
+    #Grab the band ranges we have data for from the xml file
+    try:
+        with open('bandconditions.xml', 'r') as file:
+            feed_data=xmltodict.parse(file.read())
+            #Grab the names of each band range available in the feed
+            band_menu_options={} #menu with the option as the key and the band range as the value
+            i=0 # counter variable used in the menu generator for-loop
+
+            #Build the band range menu. Assign an menu item to each one as
+            #its key so that '0' will need to be selected for the 80m-40m range, etc.
+            #Make sure there's no duplicate menu options generated
+            for band in feed_data["solar"]["solardata"]["calculatedconditions"]["band"]:
+                if band['@time'] != 'day': # Only grab the 'night' values from the feed to get rid of dupes
+                    band_menu_options[i]=f"{band['@name']}"
+                    i+=1
+        # Build the menu, present it to the user
+        for key,val in band_menu_options.items():
+            response=response + f"\n[{key}] - {val}"
+
+        #Send message containing menu to user.
+        send_message(response, sender_id, interface)
+        update_user_state(sender_id,{'command': 'BAND_CONDITIONS', 'step': 1 })
+
+    except Exception as e:
+        send_message(f"Error retrieving band data: {e}",sender_id,interface)
+
+def handle_bandconditions_steps(sender_id, message, step, interface):
+    pass
+
 
 
 def handle_mail_command(sender_id, interface):

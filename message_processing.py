@@ -3,8 +3,8 @@ import logging
 from meshtastic import BROADCAST_NUM
 
 from command_handlers import (
-    handle_mail_command, handle_bulletin_command, handle_help_command, handle_stats_command, handle_fortune_command,
-    handle_bb_steps, handle_mail_steps, handle_stats_steps, handle_wall_of_shame_command,
+    handle_bandconditions_command, handle_mail_command, handle_bulletin_command, handle_help_command, handle_stats_command, handle_fortune_command,
+    handle_bb_steps, handle_mail_steps, handle_stats_steps, handle_bandconditions_steps, handle_wall_of_shame_command,
     handle_channel_directory_command, handle_channel_directory_steps, handle_send_mail_command,
     handle_read_mail_command, handle_check_mail_command, handle_delete_mail_confirmation, handle_post_bulletin_command,
     handle_check_bulletin_command, handle_read_bulletin_command, handle_read_channel_command,
@@ -29,6 +29,7 @@ bbs_menu_handlers = {
 
 
 utilities_menu_handlers = {
+    "b": handle_bandconditions_command,
     "s": handle_stats_command,
     "f": handle_fortune_command,
     "w": handle_wall_of_shame_command,
@@ -130,6 +131,8 @@ def process_message(sender_id, message, interface, is_sync_message=False):
                     handle_bb_steps(sender_id, message, step, state, interface, bbs_nodes)
                 elif command == 'STATS':
                     handle_stats_steps(sender_id, message, step, interface)
+                elif command == 'BAND_CONDITIONS':
+                    handle_bandconditions_steps(sender_id, message, step, interface)
                 elif command == 'CHANNEL_DIRECTORY':
                     handle_channel_directory_steps(sender_id, message, step, state, interface)
                 elif command == 'CHECK_MAIL':
