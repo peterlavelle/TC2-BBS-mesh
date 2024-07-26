@@ -2,6 +2,7 @@ import logging
 import random
 import time
 import xmltodict
+from datetime import datetime
 
 from meshtastic import BROADCAST_NUM
 
@@ -11,11 +12,23 @@ from db_operations import (
     get_mail, get_mail_content,
     add_channel, get_channels, get_sender_id_by_mail_id
 )
+
 from utils import (
     get_node_id_from_num, get_node_info,
     get_node_short_name, send_message,
     update_user_state
 )
+
+##Global variables for hamqsl.com XML feed processing.
+
+#These 2 dicts store the day and night condition data seperately for each band range
+daytime_conditions={}
+nighttime_conditions={}
+
+##End of Gobal Variables
+
+
+band_menu_options={} #menu with the option as the key and the band range as the value
 
 def handle_help_command(sender_id, interface, menu_name=None):
     if menu_name:
@@ -37,29 +50,37 @@ def get_node_name(node_id, interface):
     return f"Node {node_id}"
 
 def handle_bandconditions_command(sender_id, interface):
-    response="Ham Band Conditions\nWhich bands would you like to view day/night conditions for?\n"
-    send_message(response, sender_id, interface)
     #Grab the band ranges we have data for from the xml file
     try:
         with open('bandconditions.xml', 'r') as file:
             feed_data=xmltodict.parse(file.read())
-            #Grab the names of each band range available in the feed
-            band_menu_options={} #menu with the option as the key and the band range as the value
+            response=f"Ham Band Conditions.\nUpdated: {str(datetime.strftime(datetime.strptime(feed_data['solar']['solardata']['updated'],"%d %b %Y %H%M GMT"),"%Y-%m-%d %H:%M"))}\n\nSelect Band:\n"
+            send_message(response, sender_id, interface)
+
             i=0 # counter variable used in the menu generator for-loop
 
-            #Build the band range menu. Assign an menu item to each one as
-            #its key so that '0' will need to be selected for the 80m-40m range, etc.
-            #Make sure there's no duplicate menu options generated
             for band in feed_data["solar"]["solardata"]["calculatedconditions"]["band"]:
                 if band['@time'] != 'day': # Only grab the 'night' values from the feed to get rid of dupes
                     band_menu_options[i]=f"{band['@name']}"
-                    i+=1
-        # Build the menu, present it to the user
-        for key,val in band_menu_options.items():
-            response=response + f"\n[{key}] - {val}"
+                    i+=1#Increment counter variable for menu choices
 
-        #Send message containing menu to user.
+                #Get daytime conditions for each band range
+                if band['@time'] == 'day':
+                    daytime_conditions[band['@name']]=str(band['#text'])
+                #get the night time conditions for each band
+                elif band['@time'] == 'night':
+                    nighttime_conditions[band['@name']]=str(band['#text'])
+
+            ##Build the band range menu. Assign an menu item to each one as
+            #its key so that '0' will need to be selected for the 80m-40m range, etc.
+            #Make sure there's no duplicate menu options generated
+            for key,val in band_menu_options.items():
+                response=response + f"\n[{key}] - {val}"
+
+        # Send the menu to the user
         send_message(response, sender_id, interface)
+
+
         update_user_state(sender_id,{'command': 'BAND_CONDITIONS', 'step': 1 })
 
     except Exception as e:

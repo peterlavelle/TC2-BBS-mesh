@@ -48,21 +48,8 @@ def initialize_database():
                     name TEXT NOT NULL,
                     url TEXT NOT NULL
                 );''')
-    c.execute('''CREATE TABLE IF NOT EXISTS bandconds (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    date_updated TEXT NOT NULL,
-                    range TEXT NOT NULL,
-                    day TEXT NOT NULL,
-                    night TEXT NOT NULL
-                );''')
     conn.commit()
     print("Database schema initialized.")
-
-def add_band_conditions_data(name, interface=None):
-    pass
-
-def get_band_conditions_data(name, interface=None):
-    pass
 
 def add_channel(name, url, bbs_nodes=None, interface=None):
     conn = get_db_connection()
