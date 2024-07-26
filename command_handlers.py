@@ -24,6 +24,7 @@ from utils import (
 #These 2 dicts store the day and night condition data seperately for each band range
 daytime_conditions={}
 nighttime_conditions={}
+band_menu_options={}
 
 ##End of Gobal Variables
 
